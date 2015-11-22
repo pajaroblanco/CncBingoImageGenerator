@@ -28,7 +28,9 @@ namespace BingoGenerator
         {
             //ExtractImagesFromPdfs();
 
-            foreach (String file in Directory.GetFiles(@"C:\Users\Brandon\Desktop\bingo\input"))
+            GenerateBingoPairImages();
+
+            foreach (String file in Directory.GetFiles(@"C:\Users\Brandon\Desktop\bingo\output\sheets"))
             {
                 Bitmap b = new Bitmap(_width, _height);
                 var g = Graphics.FromImage(b);
@@ -37,21 +39,67 @@ namespace BingoGenerator
                 DrawBorder(g);
                 DrawBingoCard(g, file);
                 DrawHeader(g);
-                b.Save(@"C:\Users\Brandon\Desktop\bingo\output\" + Path.GetFileNameWithoutExtension(file) + ".jpg", ImageFormat.Jpeg);
+                b.Save(@"C:\Users\Brandon\Desktop\bingo\output\final_images\" + Path.GetFileNameWithoutExtension(file) + ".png", ImageFormat.Png);
+                g.Dispose();
+                b.Dispose();
             }
         }
 
-        private void ExtractImagesFromPdfs()
+        private void GenerateBingoPairImages()
         {
-            foreach (String file in Directory.GetFiles(@"C:\Users\Brandon\Desktop\bingo\pdfs"))
+            BingoNumberManager bnm = new BingoNumberManager();
+            bnm.GenerateBingoGrids(300);
+
+            Font font = new System.Drawing.Font("Arial", 50);
+
+            int i = 1, sheet = 1;
+            float x = 0, y = 0;
+
+            Image blankCardImage = null;
+            Graphics g = null;
+
+            foreach (BingoGrid grid in bnm.BingoGrids)
             {
-                ExtractImagesFromPDF(file, @"C:\Users\Brandon\Desktop\bingo\bingo_cards");
+                if (i % 2 == 0)
+                    x = 760;
+                else
+                {
+                    blankCardImage = Image.FromFile(@"C:\Users\Brandon\Desktop\Bingo\input\blank_card.png");
+                    g = Graphics.FromImage(blankCardImage);
+                    x = 35;
+                }
+                
+                foreach (var column in grid.columns)
+                {
+                    y = 105;
+                    foreach (var value in column)
+                    {
+                        if (column.IndexOf(value) == 2 && grid.columns.IndexOf(column) == 2)
+                        {
+                            y += 100;
+                            continue;
+                        }
+
+                        int padding = 0;
+                        if (value < 10)
+                            padding = 20;
+
+                        g.DrawString(value.ToString(), font, Brushes.Black, x + padding, y);
+                        y += 100;
+                    }
+
+                    x += 105;
+                }
+
+                if (i % 2 == 0)
+                {
+                    blankCardImage.Save(@"C:\Users\Brandon\Desktop\Bingo\output\sheets\sheet" + sheet.ToString() + ".png");
+                    sheet++;
+                    g.Dispose();
+                    blankCardImage.Dispose();
+                }
+                i++;
             }
-        }
-
-        private void GnerateBingoPairImages()
-        {
-
         }
 
         private void DrawHeader(Graphics g)
@@ -66,6 +114,7 @@ namespace BingoGenerator
             int y = _pageBorder + paddingTop + borderImageWidth;
 
             g.DrawImage(headerImage, x, y, headerImage.Width, headerImage.Height);
+            headerImage.Dispose();
         }
 
         private void DrawBorder(Graphics g)
@@ -74,6 +123,7 @@ namespace BingoGenerator
 
             //g.Transform.RotateAt(90, new PointF(_width / 2, _height / 2));
             g.DrawImage(borderImage, _pageBorder, _pageBorder, _width - (2 * _pageBorder), _height - (2 * _pageBorder));
+            borderImage.Dispose();
             //g.Transform.RotateAt(-90, new PointF(_width / 2, _height / 2));
         }
 
@@ -90,6 +140,7 @@ namespace BingoGenerator
             y += paddingTop;
 
             g.DrawImage(bingoImage, x, y, bingoImage.Width, bingoImage.Height);
+            bingoImage.Dispose();
         }
 
         public Bitmap GrayScale(Bitmap Bmp)
@@ -105,92 +156,6 @@ namespace BingoGenerator
                     Bmp.SetPixel(x, y, Color.FromArgb(rgb, rgb, rgb));
                 }
             return Bmp;
-        }
-
-        public static void ExtractImagesFromPDF(string sourcePdf, string outputPath)
-        {
-            // NOTE:  This will only get the first image it finds per page.
-            PdfReader pdf = new PdfReader(sourcePdf);
-            RandomAccessFileOrArray raf = new iTextSharp.text.pdf.RandomAccessFileOrArray(sourcePdf);
-
-            try
-            {
-                for (int pageNumber = 1; pageNumber <= pdf.NumberOfPages; pageNumber++)
-                {
-                    PdfDictionary pg = pdf.GetPageN(pageNumber);
-                    PdfDictionary res =
-                      (PdfDictionary)PdfReader.GetPdfObject(pg.Get(PdfName.RESOURCES));
-                    PdfDictionary xobj =
-                      (PdfDictionary)PdfReader.GetPdfObject(res.Get(PdfName.XOBJECT));
-                    if (xobj != null)
-                    {
-                        foreach (PdfName name in xobj.Keys)
-                        {
-                            PdfObject obj = xobj.Get(name);
-                            if (obj.IsIndirect())
-                            {
-                                PdfDictionary tg = (PdfDictionary)PdfReader.GetPdfObject(obj);
-                                PdfName type =
-                                  (PdfName)PdfReader.GetPdfObject(tg.Get(PdfName.SUBTYPE));
-                                if (PdfName.IMAGE.Equals(type))
-                                {
-
-                                    int XrefIndex = Convert.ToInt32(((PRIndirectReference)obj).Number.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                                    PdfObject pdfObj = pdf.GetPdfObject(XrefIndex);
-                                    PdfStream pdfStrem = (PdfStream)pdfObj;
-                                    byte[] bytes = PdfReader.GetStreamBytesRaw((PRStream)pdfStrem);
-                                    if ((bytes != null))
-                                    {
-                                        using (System.IO.MemoryStream memStream = new System.IO.MemoryStream(bytes))
-                                        {
-                                            memStream.Position = 0;
-                                            System.Drawing.Image img = System.Drawing.Image.FromStream(memStream);
-                                            // must save the file while stream is open.
-                                            if (!Directory.Exists(outputPath))
-                                                Directory.CreateDirectory(outputPath);
-
-                                            string path = Path.Combine(outputPath, String.Format(@"{0}.jpg", pageNumber));
-                                            System.Drawing.Imaging.EncoderParameters parms = new System.Drawing.Imaging.EncoderParameters(1);
-                                            parms.Param[0] = new System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.Compression, 0);
-                                            // GetImageEncoder is found below this method
-                                            System.Drawing.Imaging.ImageCodecInfo jpegEncoder = GetImageEncoder("JPEG");
-                                            img.Save(path, jpegEncoder, parms);
-                                            break;
-
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                pdf.Close();
-            }
-
-
-        }
-
-        public static System.Drawing.Imaging.ImageCodecInfo GetImageEncoder(string imageType)
-        {
-            imageType = imageType.ToUpperInvariant();
-
-            foreach (ImageCodecInfo info in ImageCodecInfo.GetImageEncoders())
-            {
-                if (info.FormatDescription == imageType)
-                {
-                    return info;
-                }
-            }
-
-            return null;
         }
     }
 }
