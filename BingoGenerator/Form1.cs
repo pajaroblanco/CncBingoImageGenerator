@@ -15,7 +15,7 @@ namespace BingoGenerator
 {
     public partial class Form1 : Form
     {
-        int _pageBorder = 20;
+        int _pageBorder = 0;
         int _width = 1700;
         int _height = 1100;
 
@@ -30,16 +30,16 @@ namespace BingoGenerator
 
             GenerateBingoPairImages();
 
-            foreach (String file in Directory.GetFiles(@"C:\Users\Brandon\Desktop\bingo\output\sheets"))
+            foreach (String file in Directory.GetFiles(@"C:\Users\bmaye\Desktop\bingo\output\sheets"))
             {
                 Bitmap b = new Bitmap(_width, _height);
                 var g = Graphics.FromImage(b);
                 g.FillRectangle(new SolidBrush(Color.White), 0, 0, b.Width, b.Height);
                 g.Save();
-                DrawBorder(g);
                 DrawBingoCard(g, file);
-                DrawHeader(g);
-                b.Save(@"C:\Users\Brandon\Desktop\bingo\output\final_images\" + Path.GetFileNameWithoutExtension(file) + ".png", ImageFormat.Png);
+                DrawBorder(g);
+                //DrawHeader(g);
+                b.Save(@"C:\Users\bmaye\Desktop\bingo\output\final_images\" + Path.GetFileNameWithoutExtension(file) + ".png", ImageFormat.Png);
                 g.Dispose();
                 b.Dispose();
             }
@@ -48,7 +48,7 @@ namespace BingoGenerator
         private void GenerateBingoPairImages()
         {
             BingoNumberManager bnm = new BingoNumberManager();
-            bnm.GenerateBingoGrids(300);
+            bnm.GenerateBingoGrids(320);
 
             Font font = new System.Drawing.Font("Arial", 50);
 
@@ -64,7 +64,7 @@ namespace BingoGenerator
                     x = 760;
                 else
                 {
-                    blankCardImage = Image.FromFile(@"C:\Users\Brandon\Desktop\Bingo\input\blank_card.png");
+                    blankCardImage = Image.FromFile(@"C:\Users\bmaye\OneDrive - University of California, Riverside\bingo\input\blank_card.png");
                     g = Graphics.FromImage(blankCardImage);
                     x = 35;
                 }
@@ -93,7 +93,7 @@ namespace BingoGenerator
 
                 if (i % 2 == 0)
                 {
-                    blankCardImage.Save(@"C:\Users\Brandon\Desktop\Bingo\output\sheets\sheet" + sheet.ToString() + ".png");
+                    blankCardImage.Save(@"C:\Users\bmaye\Desktop\Bingo\output\sheets\sheet" + sheet.ToString() + ".png");
                     sheet++;
                     g.Dispose();
                     blankCardImage.Dispose();
@@ -104,7 +104,7 @@ namespace BingoGenerator
 
         private void DrawHeader(Graphics g)
         {
-            var headerImage = Image.FromFile(@"C:\Users\Brandon\Desktop\bingo\text.png");
+            var headerImage = Image.FromFile(@"C:\Users\bmaye\Desktop\bingo\text.png");
             int paddingTop = 25;
             int borderImageWidth = 100;
 
@@ -119,7 +119,7 @@ namespace BingoGenerator
 
         private void DrawBorder(Graphics g)
         {
-            var borderImage = Image.FromFile(@"C:\Users\Brandon\Desktop\bingo\border.jpg");
+            var borderImage = Image.FromFile(@"C:\Users\bmaye\OneDrive - University of California, Riverside\bingo\border2.png");
 
             //g.Transform.RotateAt(90, new PointF(_width / 2, _height / 2));
             g.DrawImage(borderImage, _pageBorder, _pageBorder, _width - (2 * _pageBorder), _height - (2 * _pageBorder));
@@ -130,7 +130,7 @@ namespace BingoGenerator
         private void DrawBingoCard(Graphics g, String file)
         {
             var bingoImage = GrayScale(new Bitmap(Image.FromFile(file)));
-            int paddingTop = 75;
+            int paddingTop = 0;
 
             int x = _width / 2;
             x = x - (bingoImage.Width / 2);
